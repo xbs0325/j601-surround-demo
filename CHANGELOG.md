@@ -2,6 +2,4 @@
 
 ## 1.0.0
 
-J601 promotional demo: English-first README and setup, Thor / JetPack R38.4 only.
-
-Starts from the latest surround stack (GPU BEV stitch, occupancy, YOLO-World, Qwen3-VL-2B captions). Calibration workbook and Orin/J501 history stay in [fisheye-avm-calib](https://github.com/xbs0325/fisheye-avm-calib) `v0.3.0`.
+Lean J601 Thor promotional repository cut from the v0.3.0 surround stack (`fisheye-avm-calib`). Keeps core code, Thor reproduction scripts, English docs, and a Cursor agent skill. Orin/J501 paths, Docker assets, and lab history docs removed.

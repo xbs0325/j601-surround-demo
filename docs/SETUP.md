@@ -107,8 +107,8 @@ Thor’s local window is often `DISPLAY=:1`. Use a laptop browser for calib; you
 
 ## Do not
 
-- Copy Orin-built `docker/opencv-cuda/` onto Thor
+- Copy Orin-built OpenCV trees onto Thor
 - `import cv2` for stitching inside `~/leucus/.venv-worldmm` (NumPy conflict)
 - Run demo and calib at the same time
 
-Perception messages and checklist: [`PERCEPTION.md`](PERCEPTION.md). Chessboard pitfalls: [`CALIBRATION_LESSONS.md`](CALIBRATION_LESSONS.md) (Chinese lab notes).
+Perception messages: [`PERCEPTION.md`](PERCEPTION.md). Stack overview: [`OVERVIEW.md`](OVERVIEW.md).

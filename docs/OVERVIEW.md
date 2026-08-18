@@ -1,67 +1,78 @@
-# Surround view: scene and stack (J601)
+# Surround view: scene and stack
 
-Four fisheye cameras on a mobile chassis (optional arm) are stitched into a 360° top-down ground view (BEV) for driving assist, grasp *direction*, and a short English scene caption. This demo **visualizes perception only** — it does not send chassis or arm commands.
+Four fisheye cameras on a mobile chassis (optional robot arm) feed a single metric bird’s-eye view (BEV) for driving and manipulation assist. This stage **visualizes perception only** — no chassis or arm control commands.
 
-**Platform:** Seeed reComputer Thor **J601** (j6015), JetPack R38.4.
+## Scene
 
 ```
-Front / back / left / right fisheye
+Four fisheye cameras (front / back / left / right)
         │
         ▼
-  Fisheye intrinsics + homographies (H)
+  Fisheye intrinsics + extrinsics (homography H)
         │
         ▼
   GPU undistort → ground BEV stitch
         │
-        ├── Occupancy: which side looks free, nearby obstacle distance
-        ├── YOLO-World: bottle / chair / carton / … → base_link (x, y)
-        └── Qwen3-VL: two or three English sentences of what to watch
+        ├── Occupancy: free space vs obstacles on the floor plane
+        ├── YOLO-World: open-vocab boxes → base_link (x, y)
+        └── VLM: short English caption of the scene
 ```
 
 | Use | How BEV is used | Output |
 |-----|-----------------|--------|
-| Surround showcase | Four cameras → one top-down image | Live window: stitch left, occupancy right |
-| Nav assist | Ground 2D occupancy, not a lidar map | `free` ratio, nearest F/B/L/R distance |
-| Grasp direction | Open-vocab box center | `base_link` `(x_m, y_m)` and azimuth |
-| VLM assist | Caption the stitch | Short English text, not a coordinate source |
+| Surround display | Four views fused to one top-down image | Live window: stitch + occupancy map |
+| Nav assist | 2D ground occupancy (not a lidar map) | `free` ratio, nearest obstacle per side |
+| Grasp direction | Open-vocabulary target detection | `(x_m, y_m)` and compass bin (front / front-left / …) |
+| VLM assist | Reads the stitched frame | Short English caption — not metric ground truth |
 
-Convention: image **up = vehicle forward**; `base_link` origin ≈ BEV center, **+X forward, +Y left**. IPM assumes a ground plane (no depth), so poses are 2D on the floor, not 6-DoF grasps.
+**Image up = vehicle forward.** `base_link` origin is near the BEV center: **+X forward, +Y left**. IPM assumes a flat ground plane; without depth, only 2D ground pose is available (not 6-DoF grasp).
 
-## Stack
+## Perception split
 
-| Layer | Tech | Role |
-|-------|------|------|
-| Hardware | reComputer Thor J601 · four USB fisheye + CUDA | Capture |
-| Calib | OpenCV `fisheye` + chessboard SB detect + `findHomography` | K/D, H (undistorted → BEV) |
-| Stitch hot path | CUDA OpenCV 4.14 (`cudawarping`) | GPU `remap` / `warpPerspective` / blend |
-| Calib UI | Python web + WebRTC (aiortc) | Intrinsics → extrinsics → seam 2b |
-| Occupancy | Classical BEV appearance (no seg net) | Floor vs object → 0.2 m grid |
-| Detect | Ultralytics YOLO-World v2 (`yolov8s-worldv2`) | Open-vocab boxes; BEV imgsz=384 |
-| Language | Qwen3-VL-2B (own venv, Transformers) | Caption only |
-| Ego overlay | `assets/ego_overlay.png` | Covers the center stitch hole |
+- **Occupancy** — spatial hint (where looks walkable / blocked)
+- **YOLO-World** — object boxes and `(x_m, y_m)`
+- **VLM (Qwen3-VL-2B)** — human-readable scene language; coordinates come from YOLO only
 
-Split of labor (do not mix):
+## Technology
 
-- **Occupancy** = space (free / occupied)
-- **YOLO-World** = boxes and `xy`
-- **VLM** = short description for a human
+| Layer | Technology | Role |
+|-------|------------|------|
+| Hardware | Seeed reComputer Thor j6015 (JetPack R38.4) | Four USB fisheye + CUDA |
+| Calibration | OpenCV fisheye + chessboard + homography | K/D intrinsics, H extrinsics |
+| Stitch hot path | Side-built CUDA OpenCV 4.14 (`cudawarping`) | GPU remap / warp / blend |
+| Calib UI | Python Web + WebRTC (aiortc) | Intrinsics → extrinsics → seam 2b |
+| Occupancy | Classical BEV appearance model | ~0.2 m grid vs floor appearance |
+| Detection | Ultralytics YOLO-World v2 | Open-vocab boxes; BEV imgsz=384 |
+| Semantics | Qwen3-VL-2B (separate venv) | Caption only |
+| Ego overlay | `assets/ego_overlay.png` | Covers center stitch blind zone |
 
-Stitch uses **system Python + NumPy 1.x + CUDA OpenCV**. YOLO / VLM use a separate venv (NumPy 2.x). Do not mix the two interpreters.
+## Software layout
 
-## Run (after calib)
+```
+j601-surround-demo/
+  run.sh / calib.sh   Entrypoints
+  avm/                Calib + GPU stitch
+  perception/         Occupancy, YOLO, VLM, demo UI
+  config/             Camera profile, chessboard, canvas
+  calib_results/      Intrinsics + H (board-specific)
+  docs/SETUP.md       Thor install
+```
+
+Stitch uses **system Python + NumPy 1.x + CUDA OpenCV**. YOLO and VLM use a separate venv (NumPy 2.x). Do not mix interpreters.
+
+## Run (after calibration)
 
 ```bash
 source scripts/env_opencv_cuda.sh
-./run.sh          # surround demo
-./calib.sh        # http://<board-ip>:8787/
+./run.sh          # BEV + occupancy + YOLO + VLM
+./calib.sh        # Web UI  http://<board-ip>:8787/
 ```
 
-Demo and calib are mutually exclusive (cameras). Details: [`SETUP.md`](SETUP.md), [`PERCEPTION.md`](PERCEPTION.md).
+Demo and calib are **mutually exclusive** (same cameras). Perception details: [`PERCEPTION.md`](PERCEPTION.md). Board setup: [`SETUP.md`](SETUP.md).
 
 ## Out of scope
 
 - Chassis velocity or arm joint commands
-- Occupancy as SLAM / 3D mapping
-- Parsing VLM sentences into coordinates (trust YOLO for `xy`)
-- Real-time stitch without CUDA (`--allow-cpu` is debug-only)
-- AGX Orin / J501 as a first-class target (see [fisheye-avm-calib](https://github.com/xbs0325/fisheye-avm-calib) for the from-scratch / multi-board workbook)
+- SLAM / 3D mapping from the occupancy grid
+- Parsing VLM text into coordinates
+- Real-time stitch without CUDA (use `--allow-cpu` for debug only)
