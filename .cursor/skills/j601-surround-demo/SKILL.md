@@ -21,7 +21,7 @@ description: >-
 
 **Do not copy** Orin-built `~/.local/opencv-4.14.0-cuda` to Thor — CUDA arch differs.
 
-Full install steps: [`docs/SETUP.md`](../../docs/SETUP.md).
+Full install steps: [docs/SETUP.md](docs/SETUP.md).
 
 ## Mandatory: CUDA OpenCV side install
 
