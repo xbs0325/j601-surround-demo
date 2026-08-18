@@ -14,7 +14,12 @@ SETTINGS_PATH = ROOT / "config" / "web_calib_settings.json"
 CAMERA_PATH = ROOT / "config" / "camera_config.json"
 PROFILE_PATH = ROOT / "config" / "camera_profile.json"
 
-DIRECTIONS = ("front", "back", "left", "right")
+from avm.calib_contract import (
+    DEFAULT_LATERAL_M,
+    DEFAULT_NEAR_M,
+    DEFAULT_ORIENT,
+    DIRECTIONS,
+)
 
 _DEFAULT_SETTINGS = {
     "detect_max_width": 1920,
@@ -84,11 +89,16 @@ def load_all_config() -> dict[str, Any]:
         },
         "placements": {
             d: {
-                "near_m": float((placements.get(d) or {}).get("near_m", 0.35)),
-                "lateral_m": float((placements.get(d) or {}).get("lateral_m", 0.0)),
-                "orient": str((placements.get(d) or {}).get("orient", "long-lateral")),
+                "near_m": float((placements.get(d) or {}).get("near_m", DEFAULT_NEAR_M)),
+                "lateral_m": float((placements.get(d) or {}).get("lateral_m", DEFAULT_LATERAL_M)),
+                "orient": str((placements.get(d) or {}).get("orient", DEFAULT_ORIENT)),
             }
             for d in DIRECTIONS
+        },
+        "defaults": {
+            "near_m": DEFAULT_NEAR_M,
+            "lateral_m": DEFAULT_LATERAL_M,
+            "orient": DEFAULT_ORIENT,
         },
         "settings": settings,
         "camera": {d: int(camera[d]) for d in DIRECTIONS if d in camera},
@@ -134,9 +144,9 @@ def save_all_config(payload: dict[str, Any]) -> dict[str, Any]:
         for d in DIRECTIONS:
             p = places_in.get(d) or {}
             data[d] = {
-                "near_m": float(p.get("near_m", 0.35)),
-                "lateral_m": float(p.get("lateral_m", 0.0)),
-                "orient": str(p.get("orient", "long-lateral")),
+                "near_m": float(p.get("near_m", DEFAULT_NEAR_M)),
+                "lateral_m": float(p.get("lateral_m", DEFAULT_LATERAL_M)),
+                "orient": str(p.get("orient", DEFAULT_ORIENT)),
             }
         _write_json(PLACEMENTS_PATH, data)
         changed.append("placements")

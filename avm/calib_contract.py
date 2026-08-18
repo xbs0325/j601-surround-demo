@@ -16,6 +16,11 @@ from typing import Any
 
 DIRECTIONS = ("front", "back", "left", "right")
 
+# Single source for placement defaults (must match config/extrinsic_placements.json).
+DEFAULT_NEAR_M = 0.5
+DEFAULT_LATERAL_M = 0.0
+DEFAULT_ORIENT = "long-lateral"
+
 
 def _round_float(x: float, nd: int = 6) -> float:
     return float(round(float(x), nd))
@@ -26,9 +31,9 @@ def placement_slice(placements: dict[str, Any]) -> dict[str, Any]:
     for d in DIRECTIONS:
         p = placements.get(d) or {}
         out[d] = {
-            "near_m": _round_float(p.get("near_m", 0.5)),
-            "lateral_m": _round_float(p.get("lateral_m", 0.0)),
-            "orient": str(p.get("orient", "long-lateral")),
+            "near_m": _round_float(p.get("near_m", DEFAULT_NEAR_M)),
+            "lateral_m": _round_float(p.get("lateral_m", DEFAULT_LATERAL_M)),
+            "orient": str(p.get("orient", DEFAULT_ORIENT)),
         }
     return out
 

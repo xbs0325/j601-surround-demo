@@ -121,7 +121,7 @@ DEFAULT_OUTPUT = os.path.join(DEFAULT_CALIB_DIR, "extrinsics.json")
 DEFAULT_DRAFT_OUTPUT = os.path.join(DEFAULT_CALIB_DIR, "extrinsics_draft.json")
 DEFAULT_EXTR_IMAGES = os.path.join(PROJECT_DIR, "calib_images", "extrinsics")
 
-DIRECTIONS = ["front", "back", "left", "right"]
+from avm.calib_contract import DEFAULT_NEAR_M, DEFAULT_LATERAL_M, DEFAULT_ORIENT, DIRECTIONS
 # 相机朝向（车体系视线方向）：前 +Y、后 -Y、右 +X、左 -X
 CAM_AXIS = {"front": (0.0, 1.0), "back": (0.0, -1.0),
             "right": (1.0, 0.0), "left": (-1.0, 0.0)}
@@ -805,7 +805,7 @@ def load_placements(path, cols, rows, square):
         "front": {"near_m": 0.5, "lateral_m": 0.0, "orient": "long-lateral"},
         ...
       }
-    缺方向用默认 near_m=0.5, lateral_m=0.0, orient=long-lateral。
+    缺方向用默认 near_m={DEFAULT_NEAR_M}, lateral_m={DEFAULT_LATERAL_M}, orient={DEFAULT_ORIENT}。
     """
     out = {}
     raw = {}
@@ -814,9 +814,9 @@ def load_placements(path, cols, rows, square):
             raw = json.load(f)
     for d in DIRECTIONS:
         e = dict(raw.get(d, {}))
-        near = float(e.get("near_m", 0.5))
-        lateral = float(e.get("lateral_m", 0.0))
-        orient = e.get("orient", "long-lateral")
+        near = float(e.get("near_m", DEFAULT_NEAR_M))
+        lateral = float(e.get("lateral_m", DEFAULT_LATERAL_M))
+        orient = e.get("orient", DEFAULT_ORIENT)
         if orient not in ("long-lateral", "long-along"):
             raise ValueError(f"{d}: orient 必须是 long-lateral 或 long-along，得到 {orient}")
         if near <= 0:

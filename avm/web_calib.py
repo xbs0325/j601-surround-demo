@@ -148,6 +148,17 @@ class WebCalibSession:
         board = load_chessboard_config()
         self.pattern = tuple(board["pattern_size"])
         self.square = float(board["square_size_m"])
+        if self.kind in ("extrinsics", "seam"):
+            self.reload_placements()
+
+    def reload_placements(self) -> None:
+        """Re-read config/extrinsic_placements.json (single source of truth)."""
+        from avm.calibrate_extrinsics import load_placements
+
+        cols, rows = self.pattern
+        place_path = ROOT / "config" / "extrinsic_placements.json"
+        self.placements = load_placements(str(place_path), cols, rows, self.square)
+        LOG.info(f"web_calib placements reloaded from {place_path}")
 
     def _detect(self, frame: np.ndarray):
         return detect_chessboard_hires(

@@ -610,7 +610,7 @@ function fillPlaces(placements) {
     return `<div>
       <label>${d} near / lateral</label>
       <div class="grid2">
-        <input id="cfg_${d}_near" type="number" step="0.01" value="${p.near_m ?? 0.35}"/>
+        <input id="cfg_${d}_near" type="number" step="0.01" value="${p.near_m ?? (window.__cfgDefaults?.near_m ?? 0.5)}"/>
         <input id="cfg_${d}_lat" type="number" step="0.01" value="${p.lateral_m ?? 0}"/>
       </div>
     </div>`;
@@ -657,6 +657,7 @@ async function loadConfig() {
     document.getElementById('cfg_imin').value = s.intrinsics_min_frames ?? 15;
     document.getElementById('cfg_itarget').value = s.intrinsics_target_frames ?? 25;
     document.getElementById('cfg_scale').value = s.scale_px_per_m ?? 100;
+    window.__cfgDefaults = j.defaults || { near_m: 0.5, lateral_m: 0.0, orient: 'long-lateral' };
     fillPlaces(j.placements || {});
     fillCameras(j.camera_profile || {});
     document.getElementById('cfgHint').textContent = t('cfg_loaded');
@@ -1333,8 +1334,7 @@ class Handler(BaseHTTPRequestHandler):
                 data = self._read_json()
                 try:
                     out = save_all_config(data)
-                    # 若标定会话仍在跑，热更新可立刻生效的检测参数；
-                    # balance/placements/maps 需重新「开始外参推流」重建。
+                    # 若标定会话仍在跑，热更新检测参数；placements 从 JSON 重载。
                     if HUB is not None and getattr(HUB, "calib", None) is not None:
                         try:
                             HUB.calib.reload_settings()
