@@ -2,6 +2,8 @@ __pycache__/
 *.py[cod]
 .venv/
 .cursor/
+!.cursor/skills/j601-surround-demo/
+!.cursor/skills/j601-surround-demo/**
 .venv-*/
 output/
 models/perception/
